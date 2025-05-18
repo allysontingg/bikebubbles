@@ -116,6 +116,8 @@ function filterByMinute(tripsByMinute, minute) {
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
 
+let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
+
 map.on('load', async () => {
     // Boston bike lanes
     map.addSource('boston_route', {
@@ -246,6 +248,10 @@ map.on('load', async () => {
                 .text(
                     `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`,
                 );
+        })
+        .style('--departure-ratio', (d) => {
+            if (d.totalTraffic === 0) return 0.5;
+            return stationFlow(d.departures / d.totalTraffic);
         });
 
 
@@ -297,7 +303,12 @@ map.on('load', async () => {
         circles
             .data(filteredStations, (d) => d.short_name)
             .join('circle') // Ensure the data is bound correctly
-            .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+            .attr('r', (d) => radiusScale(d.totalTraffic)) // Update circle sizes
+            .style('--departure-ratio', (d) => {
+                if (d.totalTraffic === 0) return 0.5;
+                return stationFlow(d.departures / d.totalTraffic);
+            }
+            );
     }
 
     timeSlider.addEventListener('input', updateTimeDisplay);
